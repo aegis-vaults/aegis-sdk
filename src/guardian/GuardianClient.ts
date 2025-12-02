@@ -12,7 +12,7 @@ import type {
   TransactionHistoryOptions,
   AnalyticsOptions,
 } from '../types/index.js';
-import { GuardianApiError, NetworkError } from '../errors/index.js';
+import { GuardianApiError, NetworkError, AegisErrorCode } from '../errors/index.js';
 
 /**
  * Guardian API client options
@@ -281,7 +281,9 @@ export class GuardianClient {
           const errorText = await response.text();
           throw new GuardianApiError(
             `Guardian API error: ${response.status} ${response.statusText}`,
+            AegisErrorCode.GUARDIAN_API_ERROR,
             {
+              statusCode: response.status,
               context: {
                 status: response.status,
                 statusText: response.statusText,
