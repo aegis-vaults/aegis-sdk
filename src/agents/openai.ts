@@ -32,8 +32,8 @@ export interface OpenAITool {
  *
  * @example
  * ```typescript
- * import { AegisClient } from '@aegis/sdk';
- * import { createOpenAITools } from '@aegis/sdk/agents';
+ * import { AegisClient } from '@aegis-vaults/sdk';
+ * import { createOpenAITools } from '@aegis-vaults/sdk/agents';
  * import OpenAI from 'openai';
  *
  * const aegis = new AegisClient({...});

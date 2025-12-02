@@ -16,8 +16,8 @@ import type { AegisClient } from '../client/AegisClient.js';
  *
  * @example
  * ```typescript
- * import { AegisClient } from '@aegis/sdk';
- * import { createLangChainTools } from '@aegis/sdk/agents';
+ * import { AegisClient } from '@aegis-vaults/sdk';
+ * import { createLangChainTools } from '@aegis-vaults/sdk/agents';
  * import { ChatOpenAI } from '@langchain/openai';
  * import { AgentExecutor, createOpenAIFunctionsAgent } from 'langchain/agents';
  *

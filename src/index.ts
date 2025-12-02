@@ -1,5 +1,5 @@
 /**
- * @aegis/sdk - TypeScript SDK for Aegis Protocol
+ * @aegis-vaults/sdk - TypeScript SDK for Aegis Protocol
  *
  * On-chain operating system for AI finance on Solana
  *

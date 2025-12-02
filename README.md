@@ -1,4 +1,4 @@
-# @aegis/sdk
+# @aegis-vaults/sdk
 
 > TypeScript SDK for Aegis Protocol - On-chain operating system for AI finance on Solana
 
@@ -25,13 +25,13 @@ Aegis SDK provides a production-ready TypeScript client for interacting with the
 ## Installation
 
 ```bash
-npm install @aegis/sdk @solana/web3.js @coral-xyz/anchor
+npm install @aegis-vaults/sdk @solana/web3.js @coral-xyz/anchor
 ```
 
 or with yarn:
 
 ```bash
-yarn add @aegis/sdk @solana/web3.js @coral-xyz/anchor
+yarn add @aegis-vaults/sdk @solana/web3.js @coral-xyz/anchor
 ```
 
 ## Quick Start
@@ -39,7 +39,7 @@ yarn add @aegis/sdk @solana/web3.js @coral-xyz/anchor
 ### 1. Initialize the Client
 
 ```typescript
-import { AegisClient } from '@aegis/sdk';
+import { AegisClient } from '@aegis-vaults/sdk';
 import { Connection, Keypair } from '@solana/web3.js';
 
 // Connect to Solana devnet
@@ -74,7 +74,7 @@ console.log('Transaction:', vault.signature);
 ### 3. Execute Guarded Transactions
 
 ```typescript
-import { DailyLimitExceededError } from '@aegis/sdk';
+import { DailyLimitExceededError } from '@aegis-vaults/sdk';
 
 try {
   // Execute a transaction (checked against vault policy)
@@ -153,7 +153,7 @@ const unsubscribe = await client.subscribeToVault(
 ### Amount Conversions
 
 ```typescript
-import { solToLamports, lamportsToSol, formatLamports } from '@aegis/sdk';
+import { solToLamports, lamportsToSol, formatLamports } from '@aegis-vaults/sdk';
 
 const lamports = solToLamports(1.5); // BN(1500000000)
 const sol = lamportsToSol(lamports); // 1.5
@@ -163,7 +163,7 @@ const formatted = formatLamports(lamports); // "1.5000 SOL"
 ### PDA Derivation
 
 ```typescript
-import { deriveVaultPda, deriveVaultAuthorityPda } from '@aegis/sdk';
+import { deriveVaultPda, deriveVaultAuthorityPda } from '@aegis-vaults/sdk';
 
 const [vaultPda, bump] = deriveVaultPda(ownerPubkey, programId);
 const [vaultAuthPda, authBump] = deriveVaultAuthorityPda(vaultPda, programId);
@@ -172,7 +172,7 @@ const [vaultAuthPda, authBump] = deriveVaultAuthorityPda(vaultPda, programId);
 ### Retry Logic
 
 ```typescript
-import { withRetry, isRetryableError } from '@aegis/sdk';
+import { withRetry, isRetryableError } from '@aegis-vaults/sdk';
 
 const result = await withRetry(
   async () => connection.getAccountInfo(address),
@@ -193,7 +193,7 @@ import {
   DailyLimitExceededError,
   NotWhitelistedError,
   NetworkError,
-} from '@aegis/sdk';
+} from '@aegis-vaults/sdk';
 
 try {
   await client.executeGuarded({...});
@@ -238,7 +238,7 @@ npm run type-check
 ### Module Structure
 
 ```
-@aegis/sdk
+@aegis-vaults/sdk
 ├── client/          # Main AegisClient class
 ├── types/           # TypeScript type definitions
 │   ├── program.ts   # On-chain account types

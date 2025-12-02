@@ -9,8 +9,8 @@
  *
  * @example
  * ```typescript
- * import { createOpenAITools } from '@aegis/sdk/agents';
- * import { AegisClient } from '@aegis/sdk';
+ * import { createOpenAITools } from '@aegis-vaults/sdk/agents';
+ * import { AegisClient } from '@aegis-vaults/sdk';
  *
  * const client = new AegisClient({...});
  * const tools = createOpenAITools(client);

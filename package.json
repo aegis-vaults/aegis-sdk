@@ -1,5 +1,5 @@
 {
-  "name": "@aegis/sdk",
+  "name": "@aegis-vaults/sdk",
   "version": "0.2.0",
   "description": "TypeScript SDK for Aegis Protocol - On-chain operating system for AI finance on Solana",
   "type": "module",
@@ -53,12 +53,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/aegis/aegis-sdk"
+    "url": "https://github.com/aegis-vaults/aegis-sdk"
   },
   "bugs": {
-    "url": "https://github.com/aegis/aegis-sdk/issues"
+    "url": "https://github.com/aegis-vaults/aegis-sdk/issues"
   },
-  "homepage": "https://github.com/aegis/aegis-sdk#readme",
+  "homepage": "https://github.com/aegis-vaults/aegis-sdk#readme",
   "dependencies": {
     "@coral-xyz/anchor": "^0.30.1",
     "@solana/web3.js": "^1.87.0",

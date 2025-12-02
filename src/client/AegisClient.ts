@@ -58,7 +58,7 @@ export const DEFAULT_PROGRAM_ID = 'ET9WDoFE2bf4bSmciLL7q7sKdeSYeNkWbNMHbAMBu2ZJ'
  *
  * @example
  * ```typescript
- * import { AegisClient } from '@aegis/sdk';
+ * import { AegisClient } from '@aegis-vaults/sdk';
  * import { Connection, Keypair } from '@solana/web3.js';
  *
  * const connection = new Connection('https://api.devnet.solana.com');

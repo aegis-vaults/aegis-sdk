@@ -26,8 +26,8 @@ export interface AnthropicTool {
  *
  * @example
  * ```typescript
- * import { AegisClient } from '@aegis/sdk';
- * import { createAnthropicTools, executeAegisAnthropicTool } from '@aegis/sdk/agents';
+ * import { AegisClient } from '@aegis-vaults/sdk';
+ * import { createAnthropicTools, executeAegisAnthropicTool } from '@aegis-vaults/sdk/agents';
  * import Anthropic from '@anthropic-ai/sdk';
  *
  * const aegis = new AegisClient({...});
