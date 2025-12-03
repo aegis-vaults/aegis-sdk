@@ -1,6 +1,6 @@
 {
   "name": "@aegis-vaults/sdk",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "TypeScript SDK for Aegis Protocol - On-chain operating system for AI finance on Solana",
   "type": "module",
   "main": "./dist/index.cjs",
