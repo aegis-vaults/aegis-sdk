@@ -38,7 +38,7 @@ import {
   VaultPausedError,
   UnauthorizedSignerError,
 } from '../errors/index.js';
-import { deriveVaultPda, deriveVaultAuthorityPda, deriveFeeTreasuryPda, deriveOverridePda } from '../utils/pda.js';
+import { deriveVaultPda, deriveVaultAuthorityPda, deriveFeeTreasuryPda, deriveOverridePda, generateVaultNonce, getDepositAddress } from '../utils/pda.js';
 import idl from '../idl/aegis_core.json';
 
 /**
@@ -222,25 +222,30 @@ export class AegisClient {
   /**
    * Creates a new vault with specified configuration
    *
+   * Users can create unlimited vaults by providing different nonce values.
+   * If no nonce is provided, a unique one is generated automatically.
+   *
    * @param options - Vault creation options
-   * @returns Vault address and transaction signature
+   * @returns Vault address, deposit address, nonce, and transaction signature
    * @throws MissingWalletError if no wallet is connected
-   * @throws NotImplementedError - This method is not yet implemented
    *
    * @example
    * ```typescript
    * const result = await client.createVault({
    *   name: 'My AI Treasury',
    *   agentSigner: 'AgentPublicKey...',
-   *   dailyLimit: 1000000000, // 1 SOL
+   *   dailyLimit: 1000000000, // 1 SOL in lamports
    * });
    *
    * console.log('Vault created:', result.vaultAddress);
-   * console.log('Transaction:', result.signature);
+   * console.log('Deposit address:', result.depositAddress);
+   * console.log('Send SOL to the deposit address to fund your vault!');
    * ```
    */
   public async createVault(options: CreateVaultOptions): Promise<{
     vaultAddress: string;
+    depositAddress: string;
+    nonce: string;
     signature: string;
   }> {
     if (!this.wallet) {
@@ -251,15 +256,19 @@ export class AegisClient {
       const authority = this.wallet.publicKey;
       const agentSigner = new PublicKey(options.agentSigner);
 
-      // Derive vault PDA
-      const [vaultPda] = deriveVaultPda(authority, this.programId);
+      // Generate a unique nonce for this vault (allows unlimited vaults per user)
+      const nonce = options.nonce ? new BN(options.nonce.toString()) : generateVaultNonce();
 
-      // Derive vault authority PDA (will hold the funds)
+      // Derive vault PDA with nonce
+      const [vaultPda] = deriveVaultPda(authority, this.programId, nonce);
+
+      // Derive vault authority PDA (will hold the funds - THIS IS THE DEPOSIT ADDRESS)
       const [vaultAuthorityPda] = deriveVaultAuthorityPda(vaultPda, this.programId);
 
-      // Build instruction
+      // Build instruction with nonce as first argument
       const ix = await this.program.methods
         .initializeVault(
+          nonce,
           agentSigner,
           new BN(options.dailyLimit.toString()),
           options.name
@@ -268,7 +277,7 @@ export class AegisClient {
           vault: vaultPda,
           vaultAuthority: vaultAuthorityPda,
           authority: authority,
-          systemProgram: PublicKey.default, // System program is automatically filled
+          systemProgram: PublicKey.default,
         })
         .instruction();
 
@@ -277,6 +286,8 @@ export class AegisClient {
 
       return {
         vaultAddress: vaultPda.toBase58(),
+        depositAddress: vaultAuthorityPda.toBase58(),
+        nonce: nonce.toString(),
         signature,
       };
     } catch (error) {
@@ -366,38 +377,85 @@ export class AegisClient {
   }
 
   /**
-   * Derives the vault PDA for a given owner
+   * Derives the vault PDA for a given owner and nonce
    *
    * @param owner - Owner wallet address
+   * @param nonce - Optional nonce for multiple vaults (default 0)
    * @returns Vault PDA address and bump seed
    *
    * @example
    * ```typescript
-   * const [vaultPda, bump] = client.deriveVaultAddress('OwnerPublicKey...');
-   * console.log('Vault PDA:', vaultPda.toBase58());
+   * // First vault (nonce = 0)
+   * const [vault1Pda, bump1] = client.deriveVaultAddress('OwnerPublicKey...');
+   * 
+   * // Additional vaults with nonce
+   * const [vault2Pda, bump2] = client.deriveVaultAddress('OwnerPublicKey...', '1234567890');
    * ```
    */
-  public deriveVaultAddress(owner: string): [PublicKey, number] {
+  public deriveVaultAddress(owner: string, nonce?: string | number | bigint): [PublicKey, number] {
     const ownerPubkey = new PublicKey(owner);
-    return deriveVaultPda(ownerPubkey, this.programId);
+    const nonceBN = nonce ? new BN(nonce.toString()) : new BN(0);
+    return deriveVaultPda(ownerPubkey, this.programId, nonceBN);
   }
 
   /**
-   * Derives the vault authority PDA that holds vault funds
+   * Derives the vault authority PDA that holds vault funds (DEPOSIT ADDRESS)
+   *
+   * IMPORTANT: This is where you send SOL to fund your vault!
+   * Do NOT send funds to the vault PDA itself.
    *
    * @param vaultAddress - Vault PDA address
    * @returns Vault authority PDA and bump seed
    *
    * @example
    * ```typescript
-   * const [vaultAuthPda, bump] = client.deriveVaultAuthorityAddress('VaultPDA...');
-   * const balance = await connection.getBalance(vaultAuthPda);
-   * console.log('Vault balance:', balance);
+   * const [depositAddress, bump] = client.deriveVaultAuthorityAddress('VaultPDA...');
+   * console.log('Send SOL to:', depositAddress.toBase58());
+   * 
+   * // Check vault balance
+   * const balance = await connection.getBalance(depositAddress);
+   * console.log('Vault balance:', balance / 1e9, 'SOL');
    * ```
    */
   public deriveVaultAuthorityAddress(vaultAddress: string): [PublicKey, number] {
     const vaultPubkey = new PublicKey(vaultAddress);
     return deriveVaultAuthorityPda(vaultPubkey, this.programId);
+  }
+
+  /**
+   * Gets the deposit address for a vault
+   *
+   * This is a convenience method that returns the address where you should
+   * send SOL to fund your vault.
+   *
+   * @param vaultAddress - The vault PDA address
+   * @returns The deposit address as a string
+   *
+   * @example
+   * ```typescript
+   * const depositAddress = client.getDepositAddress('VaultPDA...');
+   * console.log('Send SOL to:', depositAddress);
+   * ```
+   */
+  public getVaultDepositAddress(vaultAddress: string): string {
+    return getDepositAddress(vaultAddress, this.programId);
+  }
+
+  /**
+   * Gets the balance of a vault
+   *
+   * @param vaultAddress - The vault PDA address
+   * @returns Balance in lamports
+   *
+   * @example
+   * ```typescript
+   * const balance = await client.getVaultBalance('VaultPDA...');
+   * console.log('Balance:', balance / 1e9, 'SOL');
+   * ```
+   */
+  public async getVaultBalance(vaultAddress: string): Promise<number> {
+    const depositAddress = this.getVaultDepositAddress(vaultAddress);
+    return this.connection.getBalance(new PublicKey(depositAddress));
   }
 
   // ============================================================================

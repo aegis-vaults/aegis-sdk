@@ -130,6 +130,13 @@ export interface CreateVaultOptions {
   dailyLimit: number | bigint;
 
   /**
+   * Optional nonce for the vault PDA
+   * If not provided, a unique nonce is generated automatically.
+   * Use different nonces to create multiple vaults per wallet.
+   */
+  nonce?: string | number | bigint;
+
+  /**
    * Transaction execution options
    */
   transactionOptions?: TransactionOptions;
