@@ -30,12 +30,9 @@ import * as bs58 from 'bs58';
 // Configuration
 const DEVNET_RPC = 'https://devnet.helius-rpc.com/?api-key=d0bb1f98-b8e3-4f52-9108-778ff3d7dcf1';
 const TARGET_ADDRESS = 'APu4og6CE5uocyKHrb6fNw7RukVaTtceH4wKoxfMoALs';
-const PROGRAM_ID = new PublicKey('AeGisCoreVau1tProgramAddressXXXXXXXXXXXXX');
 
-// Get actual program ID from environment or use default
-const AEGIS_PROGRAM_ID = new PublicKey(
-  process.env.AEGIS_PROGRAM_ID || 'AEgisCoreProgram11111111111111111111111111'
-);
+// Aegis Program ID (devnet) - matches SDK default
+const AEGIS_PROGRAM_ID = new PublicKey('ET9WDoFE2bf4bSmciLL7q7sKdeSYeNkWbNMHbAMBu2ZJ');
 
 async function main() {
   console.log('═══════════════════════════════════════════════════════════════');
@@ -104,7 +101,7 @@ async function main() {
   console.log('');
 
   // Derive vault authority (where funds are held)
-  const [vaultAuthority] = deriveVaultAuthorityPda(vaultPubkey, vaultAccount.owner);
+  const [vaultAuthority] = deriveVaultAuthorityPda(vaultPubkey, AEGIS_PROGRAM_ID);
   console.log('💰 Vault Authority (deposit address):', vaultAuthority.toBase58());
 
   // Get vault balance
