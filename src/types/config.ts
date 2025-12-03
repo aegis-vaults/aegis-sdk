@@ -143,7 +143,7 @@ export interface CreateVaultOptions {
 }
 
 /**
- * Options for executing a guarded transaction
+ * Options for executing a guarded transaction (owner-signed)
  */
 export interface ExecuteGuardedOptions {
   /**
@@ -160,6 +160,49 @@ export interface ExecuteGuardedOptions {
    * Amount to transfer (in lamports)
    */
   amount: number | bigint;
+
+  /**
+   * Vault nonce (required for vault PDA derivation)
+   */
+  vaultNonce: number | bigint;
+
+  /**
+   * Optional purpose/memo for the transaction
+   */
+  purpose?: string;
+
+  /**
+   * Transaction execution options
+   */
+  transactionOptions?: TransactionOptions;
+}
+
+/**
+ * Options for executing an agent-signed transaction
+ * 
+ * Allows the authorized AI agent to execute transactions autonomously
+ * within the vault's policy constraints.
+ */
+export interface ExecuteAgentOptions {
+  /**
+   * Vault address
+   */
+  vault: string;
+
+  /**
+   * Destination address (must be whitelisted)
+   */
+  destination: string;
+
+  /**
+   * Amount to transfer (in lamports)
+   */
+  amount: number | bigint;
+
+  /**
+   * Vault nonce (required for vault PDA derivation)
+   */
+  vaultNonce: number | bigint;
 
   /**
    * Optional purpose/memo for the transaction

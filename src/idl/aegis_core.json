@@ -19,6 +19,7 @@
         "Add an address to the vault's whitelist",
         "",
         "# Arguments",
+        "* `vault_nonce` - The nonce used to derive the vault PDA",
         "* `address` - Address to add to the whitelist"
       ],
       "discriminator": [
@@ -50,6 +51,10 @@
               {
                 "kind": "account",
                 "path": "authority"
+              },
+              {
+                "kind": "arg",
+                "path": "vault_nonce"
               }
             ]
           }
@@ -64,6 +69,10 @@
       ],
       "args": [
         {
+          "name": "vault_nonce",
+          "type": "u64"
+        },
+        {
           "name": "address",
           "type": "pubkey"
         }
@@ -73,6 +82,9 @@
       "name": "approve_override",
       "docs": [
         "Approve a pending override request",
+        "",
+        "# Arguments",
+        "* `vault_nonce` - The nonce used to derive the vault PDA",
         "",
         "Allows vault authority to manually approve a blocked transaction."
       ],
@@ -104,6 +116,10 @@
               {
                 "kind": "account",
                 "path": "authority"
+              },
+              {
+                "kind": "arg",
+                "path": "vault_nonce"
               }
             ]
           },
@@ -149,7 +165,12 @@
           }
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "vault_nonce",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "create_override",
@@ -157,6 +178,7 @@
         "Create a pending override request for a blocked transaction",
         "",
         "# Arguments",
+        "* `vault_nonce` - The nonce used to derive the vault PDA",
         "* `destination` - The destination address for the blocked transaction",
         "* `amount` - Amount of the blocked transaction (in lamports)",
         "* `reason` - Reason why the transaction was blocked"
@@ -190,6 +212,10 @@
               {
                 "kind": "account",
                 "path": "authority"
+              },
+              {
+                "kind": "arg",
+                "path": "vault_nonce"
               }
             ]
           }
@@ -239,6 +265,10 @@
       ],
       "args": [
         {
+          "name": "vault_nonce",
+          "type": "u64"
+        },
+        {
           "name": "destination",
           "type": "pubkey"
         },
@@ -257,12 +287,165 @@
       ]
     },
     {
+      "name": "execute_agent",
+      "docs": [
+        "Execute an agent-signed transaction with policy validation",
+        "",
+        "Allows the authorized AI agent to execute transactions autonomously within",
+        "the vault's policy constraints. The agent_signer must match vault.agent_signer.",
+        "",
+        "Policy checks enforced:",
+        "- Vault not paused",
+        "- Destination is whitelisted",
+        "- Amount within daily limit",
+        "",
+        "# Arguments",
+        "* `vault_nonce` - The nonce used to derive the vault PDA",
+        "* `amount` - Amount to transfer (in lamports)"
+      ],
+      "discriminator": [
+        17,
+        189,
+        103,
+        244,
+        206,
+        233,
+        43,
+        155
+      ],
+      "accounts": [
+        {
+          "name": "vault",
+          "docs": [
+            "Vault configuration account",
+            "Note: We use the vault's stored authority for seed derivation"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vault.authority",
+                "account": "VaultConfig"
+              },
+              {
+                "kind": "arg",
+                "path": "vault_nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "agent_signer",
+          "docs": [
+            "The AI agent signer - must match vault.agent_signer"
+          ],
+          "signer": true
+        },
+        {
+          "name": "vault_authority",
+          "docs": [
+            "Vault authority PDA that holds the actual SOL/USDC funds",
+            "Seeds: [\"vault_authority\", vault.key()]",
+            "This PDA can sign for transfers since we have the bump seed"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vault"
+              }
+            ]
+          }
+        },
+        {
+          "name": "destination",
+          "docs": [
+            "Destination account to receive funds"
+          ],
+          "writable": true
+        },
+        {
+          "name": "fee_treasury",
+          "docs": [
+            "Fee treasury account to collect protocol fees"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  114,
+                  101,
+                  97,
+                  115,
+                  117,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "vault_nonce",
+          "type": "u64"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "execute_approved_override",
       "docs": [
         "Execute a previously approved override transaction",
         "",
         "Executes a transaction that was blocked by policy but manually approved.",
-        "Does not count against daily limits. Still collects protocol fees."
+        "Does not count against daily limits. Still collects protocol fees.",
+        "",
+        "# Arguments",
+        "* `vault_nonce` - The nonce used to derive the vault PDA"
       ],
       "discriminator": [
         252,
@@ -296,6 +479,10 @@
               {
                 "kind": "account",
                 "path": "authority"
+              },
+              {
+                "kind": "arg",
+                "path": "vault_nonce"
               }
             ]
           },
@@ -419,17 +606,23 @@
           "address": "11111111111111111111111111111111"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "vault_nonce",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "execute_guarded",
       "docs": [
-        "Execute a guarded transaction with policy validation",
+        "Execute a guarded transaction with policy validation (owner-signed)",
         "",
         "Validates transaction against vault policies (whitelist, daily limits).",
-        "Fails if transaction is blocked - use create_override instead.",
+        "Requires the vault OWNER to sign. For agent-signed transactions, use execute_agent.",
         "",
         "# Arguments",
+        "* `vault_nonce` - The nonce used to derive the vault PDA",
         "* `amount` - Amount to transfer (in lamports)"
       ],
       "discriminator": [
@@ -461,6 +654,10 @@
               {
                 "kind": "account",
                 "path": "authority"
+              },
+              {
+                "kind": "arg",
+                "path": "vault_nonce"
               }
             ]
           }
@@ -546,6 +743,10 @@
         }
       ],
       "args": [
+        {
+          "name": "vault_nonce",
+          "type": "u64"
+        },
         {
           "name": "amount",
           "type": "u64"
@@ -732,7 +933,10 @@
       "docs": [
         "Pause a vault to block all transactions",
         "",
-        "Emergency function to immediately halt all vault operations."
+        "Emergency function to immediately halt all vault operations.",
+        "",
+        "# Arguments",
+        "* `vault_nonce` - The nonce used to derive the vault PDA"
       ],
       "discriminator": [
         250,
@@ -766,6 +970,10 @@
               {
                 "kind": "account",
                 "path": "authority"
+              },
+              {
+                "kind": "arg",
+                "path": "vault_nonce"
               }
             ]
           }
@@ -781,7 +989,12 @@
           ]
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "vault_nonce",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "remove_from_whitelist",
@@ -789,6 +1002,7 @@
         "Remove an address from the vault's whitelist",
         "",
         "# Arguments",
+        "* `vault_nonce` - The nonce used to derive the vault PDA",
         "* `address` - Address to remove from the whitelist"
       ],
       "discriminator": [
@@ -820,6 +1034,10 @@
               {
                 "kind": "account",
                 "path": "authority"
+              },
+              {
+                "kind": "arg",
+                "path": "vault_nonce"
               }
             ]
           }
@@ -834,6 +1052,10 @@
       ],
       "args": [
         {
+          "name": "vault_nonce",
+          "type": "u64"
+        },
+        {
           "name": "address",
           "type": "pubkey"
         }
@@ -844,7 +1066,10 @@
       "docs": [
         "Resume a paused vault",
         "",
-        "Re-enables transaction execution for a paused vault."
+        "Re-enables transaction execution for a paused vault.",
+        "",
+        "# Arguments",
+        "* `vault_nonce` - The nonce used to derive the vault PDA"
       ],
       "discriminator": [
         68,
@@ -878,6 +1103,10 @@
               {
                 "kind": "account",
                 "path": "authority"
+              },
+              {
+                "kind": "arg",
+                "path": "vault_nonce"
               }
             ]
           }
@@ -893,7 +1122,12 @@
           ]
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "vault_nonce",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "update_agent_signer",
@@ -903,6 +1137,7 @@
         "Allows vault authority to rotate the agent's signing key for security.",
         "",
         "# Arguments",
+        "* `vault_nonce` - The nonce used to derive the vault PDA",
         "* `new_agent_signer` - New public key for the AI agent"
       ],
       "discriminator": [
@@ -937,6 +1172,10 @@
               {
                 "kind": "account",
                 "path": "authority"
+              },
+              {
+                "kind": "arg",
+                "path": "vault_nonce"
               }
             ]
           }
@@ -954,6 +1193,10 @@
       ],
       "args": [
         {
+          "name": "vault_nonce",
+          "type": "u64"
+        },
+        {
           "name": "new_agent_signer",
           "type": "pubkey"
         }
@@ -965,6 +1208,7 @@
         "Update vault daily spending limit",
         "",
         "# Arguments",
+        "* `vault_nonce` - The nonce used to derive the vault PDA",
         "* `new_daily_limit` - New maximum amount (in lamports) that can be spent per day"
       ],
       "discriminator": [
@@ -996,6 +1240,10 @@
               {
                 "kind": "account",
                 "path": "authority"
+              },
+              {
+                "kind": "arg",
+                "path": "vault_nonce"
               }
             ]
           }
@@ -1009,6 +1257,10 @@
         }
       ],
       "args": [
+        {
+          "name": "vault_nonce",
+          "type": "u64"
+        },
         {
           "name": "new_daily_limit",
           "type": "u64"
@@ -1380,6 +1632,11 @@
       "code": 12015,
       "name": "InvalidAuthority",
       "msg": "Invalid vault authority"
+    },
+    {
+      "code": 12016,
+      "name": "InvalidAgentSigner",
+      "msg": "Invalid agent signer - does not match vault.agent_signer"
     }
   ],
   "types": [

@@ -55,21 +55,24 @@ export function createLangChainTools(client: AegisClient): any[] {
         type: 'object',
         properties: {
           vault: { type: 'string', description: 'Vault address' },
-          destination: { type: 'string', description: 'Destination address' },
+          destination: { type: 'string', description: 'Destination address (must be whitelisted)' },
           amount: { type: 'number', description: 'Amount in lamports' },
+          vaultNonce: { type: 'number', description: 'Vault nonce for PDA derivation' },
           purpose: { type: 'string', description: 'Transaction purpose' },
         },
-        required: ['vault', 'destination', 'amount'],
+        required: ['vault', 'destination', 'amount', 'vaultNonce'],
       },
       func: async (input: any) => {
         try {
-          const signature = await client.executeGuarded({
+          // Use executeAgent for agent-signed transactions
+          const signature = await client.executeAgent({
             vault: input.vault,
             destination: input.destination,
             amount: BigInt(input.amount),
+            vaultNonce: BigInt(input.vaultNonce || 0),
             purpose: input.purpose,
           });
-          return `Transaction executed successfully. Signature: ${signature}`;
+          return `Agent transaction executed successfully. Signature: ${signature}`;
         } catch (error) {
           return `Transaction failed: ${error instanceof Error ? error.message : String(error)}`;
         }

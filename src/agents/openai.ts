@@ -89,7 +89,7 @@ export function createOpenAITools(_client: AegisClient): OpenAITool[] {
       type: 'function',
       function: {
         name: 'aegis_execute_transaction',
-        description: 'Execute a policy-guarded transaction from a vault. Transaction must comply with daily limits and whitelist.',
+        description: 'Execute an agent-signed transaction from a vault. The agent can autonomously execute transactions within policy constraints (daily limits, whitelist).',
         parameters: {
           type: 'object',
           properties: {
@@ -99,18 +99,22 @@ export function createOpenAITools(_client: AegisClient): OpenAITool[] {
             },
             destination: {
               type: 'string',
-              description: 'Destination wallet address (public key)',
+              description: 'Destination wallet address (public key) - must be whitelisted',
             },
             amount: {
               type: 'number',
               description: 'Amount to send in lamports (1 SOL = 1,000,000,000 lamports)',
+            },
+            vaultNonce: {
+              type: 'number',
+              description: 'Vault nonce used for PDA derivation (from vault creation)',
             },
             purpose: {
               type: 'string',
               description: 'Optional description of the transaction purpose',
             },
           },
-          required: ['vault', 'destination', 'amount'],
+          required: ['vault', 'destination', 'amount', 'vaultNonce'],
         },
       },
     },
@@ -291,10 +295,12 @@ export async function executeAegisTool(
         });
 
       case 'aegis_execute_transaction':
-        return await aegisClient.executeGuarded({
+        // Use executeAgent for agent-signed transactions
+        return await aegisClient.executeAgent({
           vault: args.vault,
           destination: args.destination,
           amount: BigInt(args.amount),
+          vaultNonce: BigInt(args.vaultNonce || 0),
           purpose: args.purpose,
         });
 

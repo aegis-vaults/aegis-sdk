@@ -10,6 +10,7 @@ import type {
   AegisConfig,
   CreateVaultOptions,
   ExecuteGuardedOptions,
+  ExecuteAgentOptions,
   RequestOverrideOptions,
   UpdatePolicyOptions,
   TransactionHistoryOptions,
@@ -710,14 +711,15 @@ export class AegisClient {
       const vaultPubkey = new PublicKey(options.vault);
       const destinationPubkey = new PublicKey(options.destination);
       const authority = this.wallet.publicKey;
+      const vaultNonce = new BN(options.vaultNonce.toString());
 
       // Derive required PDAs
       const [vaultAuthorityPda] = deriveVaultAuthorityPda(vaultPubkey, this.programId);
       const [feeTreasuryPda] = deriveFeeTreasuryPda(this.programId);
 
-      // Build execute_guarded instruction
+      // Build execute_guarded instruction (owner-signed)
       const ix = await this.program.methods
-        .executeGuarded(new BN(options.amount.toString()))
+        .executeGuarded(vaultNonce, new BN(options.amount.toString()))
         .accounts({
           vault: vaultPubkey,
           authority: authority,
@@ -731,6 +733,74 @@ export class AegisClient {
       return await this.sendTransaction([ix], options.transactionOptions);
     } catch (error) {
       throw this.handleError(error, 'Failed to execute guarded transaction');
+    }
+  }
+
+  /**
+   * Executes an agent-signed transaction from the vault
+   *
+   * Allows the authorized AI agent to execute transactions autonomously within
+   * the vault's policy constraints. The connected wallet must be the authorized
+   * agent_signer for this vault.
+   *
+   * Policy checks enforced on-chain:
+   * - Vault not paused
+   * - Destination is whitelisted
+   * - Amount within daily limit
+   *
+   * @param options - Agent transaction options
+   * @returns Transaction signature
+   * @throws MissingWalletError if no wallet is connected
+   * @throws PolicyViolationError if transaction violates vault policy
+   * @throws InvalidAgentSignerError if the connected wallet is not the authorized agent
+   *
+   * @example
+   * ```typescript
+   * // Connect the agent wallet (not the owner!)
+   * client.connect(agentWallet);
+   * 
+   * // Execute an agent-signed transaction
+   * const signature = await client.executeAgent({
+   *   vault: 'VaultPublicKey...',
+   *   destination: 'RecipientPublicKey...', // Must be whitelisted
+   *   amount: 100_000_000, // 0.1 SOL
+   *   vaultNonce: 12345, // From vault creation
+   * });
+   *
+   * console.log('Transaction executed by agent:', signature);
+   * ```
+   */
+  public async executeAgent(options: ExecuteAgentOptions): Promise<string> {
+    if (!this.wallet) {
+      throw new MissingWalletError('Agent wallet must be connected to execute transactions');
+    }
+
+    try {
+      const vaultPubkey = new PublicKey(options.vault);
+      const destinationPubkey = new PublicKey(options.destination);
+      const agentSigner = this.wallet.publicKey;
+      const vaultNonce = new BN(options.vaultNonce.toString());
+
+      // Derive required PDAs
+      const [vaultAuthorityPda] = deriveVaultAuthorityPda(vaultPubkey, this.programId);
+      const [feeTreasuryPda] = deriveFeeTreasuryPda(this.programId);
+
+      // Build execute_agent instruction (agent-signed)
+      const ix = await this.program.methods
+        .executeAgent(vaultNonce, new BN(options.amount.toString()))
+        .accounts({
+          vault: vaultPubkey,
+          agentSigner: agentSigner,
+          vaultAuthority: vaultAuthorityPda,
+          destination: destinationPubkey,
+          feeTreasury: feeTreasuryPda,
+          systemProgram: PublicKey.default,
+        })
+        .instruction();
+
+      return await this.sendTransaction([ix], options.transactionOptions);
+    } catch (error) {
+      throw this.handleError(error, 'Failed to execute agent transaction');
     }
   }
 

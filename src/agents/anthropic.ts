@@ -54,7 +54,7 @@ export function createAnthropicTools(_client: AegisClient): AnthropicTool[] {
   return [
     {
       name: 'aegis_execute_transaction',
-      description: 'Execute a policy-guarded transaction from an Aegis vault. The transaction will be checked against vault policies including daily limits and whitelists.',
+      description: 'Execute an agent-signed transaction from an Aegis vault. The agent can autonomously execute transactions within policy constraints (daily limits, whitelist).',
       input_schema: {
         type: 'object',
         properties: {
@@ -64,18 +64,22 @@ export function createAnthropicTools(_client: AegisClient): AnthropicTool[] {
           },
           destination: {
             type: 'string',
-            description: 'The destination wallet address (Solana public key) to send funds to',
+            description: 'The destination wallet address (Solana public key) - must be whitelisted',
           },
           amount: {
             type: 'number',
             description: 'Amount to send in lamports (1 SOL = 1,000,000,000 lamports)',
+          },
+          vaultNonce: {
+            type: 'number',
+            description: 'Vault nonce used for PDA derivation (from vault creation)',
           },
           purpose: {
             type: 'string',
             description: 'Optional description of why this transaction is being made',
           },
         },
-        required: ['vault', 'destination', 'amount'],
+        required: ['vault', 'destination', 'amount', 'vaultNonce'],
       },
     },
     {
@@ -198,16 +202,18 @@ export async function executeAegisAnthropicTool(
   try {
     switch (name) {
       case 'aegis_execute_transaction': {
-        const signature = await client.executeGuarded({
+        // Use executeAgent for agent-signed transactions
+        const signature = await client.executeAgent({
           vault: input.vault,
           destination: input.destination,
           amount: BigInt(input.amount),
+          vaultNonce: BigInt(input.vaultNonce || 0),
           purpose: input.purpose,
         });
         return {
           success: true,
           signature,
-          message: `Transaction executed successfully. Signature: ${signature}`,
+          message: `Agent transaction executed successfully. Signature: ${signature}`,
         };
       }
 
