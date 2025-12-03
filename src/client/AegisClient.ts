@@ -110,6 +110,9 @@ export class AegisClient {
   /** Retry delay in milliseconds */
   private readonly retryDelay: number;
 
+  /** Automatically request override on policy violations */
+  private readonly autoRequestOverride: boolean;
+
   /** Wallet instance (optional) */
   private wallet?: Wallet;
 
@@ -160,6 +163,7 @@ export class AegisClient {
     this.autoRetry = config.autoRetry ?? true;
     this.maxRetries = config.maxRetries || 3;
     this.retryDelay = config.retryDelay || 1000;
+    this.autoRequestOverride = config.autoRequestOverride ?? true;
 
     // Setup program (with dummy wallet for read-only operations)
     const dummyWallet = {
@@ -800,7 +804,83 @@ export class AegisClient {
 
       return await this.sendTransaction([ix], options.transactionOptions);
     } catch (error) {
-      throw this.handleError(error, 'Failed to execute agent transaction');
+      const handledError = this.handleError(error, 'Failed to execute agent transaction');
+
+      // Auto-notify Guardian API on policy violations (if enabled)
+      if (this.autoRequestOverride &&
+          (handledError instanceof DailyLimitExceededError ||
+           handledError instanceof NotWhitelistedError ||
+           handledError instanceof VaultPausedError)) {
+
+        try {
+          // Notify Guardian API about the blocked transaction
+          // Guardian will create the override request and send notifications to owner
+          const reason = handledError instanceof DailyLimitExceededError ? 'DailyLimitExceeded' :
+                        handledError instanceof NotWhitelistedError ? 'NotWhitelisted' :
+                        'VaultPaused';
+
+          console.log(`[Aegis SDK] Transaction blocked: ${reason}. Notifying Guardian API...`);
+
+          const response = await fetch(`${this.guardianApiUrl}/api/transactions/blocked`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              vaultPublicKey: options.vault,
+              destination: options.destination,
+              amount: options.amount.toString(),
+              reason,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.warn('[Aegis SDK] Failed to notify Guardian about blocked transaction:', {
+              vaultPublicKey: options.vault,
+              reason,
+              error: errorData,
+              status: response.status,
+            });
+            throw handledError; // Throw original error if Guardian notification fails
+          }
+
+          const result = await response.json();
+
+          if (!result.success) {
+            console.warn('[Aegis SDK] Guardian API returned error:', result.error);
+            throw handledError;
+          }
+
+          // Log success
+          console.log('[Aegis SDK] Guardian notified successfully:', {
+            transactionId: result.data?.transactionId,
+            blinkUrl: result.data?.blinkUrl,
+          });
+
+          // Throw enhanced error with override info
+          // The blinkUrl is the shareable dial.to URL that the vault owner can use to approve
+          const enhancedError = handledError as any;
+          enhancedError.overrideRequested = true;
+          enhancedError.transactionId = result.data?.transactionId;
+          enhancedError.actionUrl = result.data?.actionUrl; // Raw API URL
+          enhancedError.blinkUrl = result.data?.blinkUrl;   // Shareable dial.to URL
+          enhancedError.message = `${handledError.message}\n\n` +
+            `✅ Override notification sent to vault owner.\n` +
+            `📱 They will receive notifications via their configured channels (email, Telegram, Discord).\n` +
+            `🔗 Blink URL: ${result.data?.blinkUrl || '(generating...)'}`;
+          throw enhancedError;
+        } catch (notificationError) {
+          // If notification fails, log and throw original error
+          if (notificationError instanceof AegisError) {
+            throw notificationError;
+          }
+          console.error('[Aegis SDK] Failed to send blocked transaction notification:', notificationError);
+          throw handledError;
+        }
+      }
+
+      throw handledError;
     }
   }
 

@@ -73,6 +73,14 @@ export interface AegisConfig {
    * @default 1000
    */
   retryDelay?: number;
+
+  /**
+   * Automatically create override requests when transactions are blocked
+   * When enabled, failed transactions will automatically create override requests
+   * and emit TransactionBlocked events for Guardian notifications
+   * @default true
+   */
+  autoRequestOverride?: boolean;
 }
 
 /**

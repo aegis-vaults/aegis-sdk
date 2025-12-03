@@ -289,6 +289,36 @@ async function main() {
     console.log(`  Explorer: https://explorer.solana.com/tx/${signature}?cluster=devnet`);
     console.log('');
 
+    // Record transaction to Guardian API
+    console.log('📝 Recording transaction to Guardian API...');
+    try {
+      const guardianUrl = process.env.GUARDIAN_URL || 'https://aegis-guardian-production.up.railway.app';
+      const recordResponse = await fetch(`${guardianUrl}/api/transactions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': process.env.USER_ID || '', // Would need user auth in production
+        },
+        body: JSON.stringify({
+          signature,
+          vaultPublicKey: vaultAddress,
+          from: vaultAuthorityPda.toBase58(),
+          to: destination,
+          amount: amountLamports.toString(),
+          status: 'EXECUTED',
+        }),
+      });
+      
+      if (recordResponse.ok) {
+        console.log('   Transaction recorded successfully');
+      } else {
+        console.log('   Note: Transaction not recorded (auth required)');
+      }
+    } catch (e) {
+      console.log('   Note: Could not record transaction to Guardian');
+    }
+    console.log('');
+
     // Check new balance
     const newBalance = await connection.getBalance(vaultAuthorityPda);
     console.log(`💰 New vault balance: ${(newBalance / LAMPORTS_PER_SOL).toFixed(4)} SOL`);

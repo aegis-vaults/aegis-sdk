@@ -296,13 +296,34 @@ export async function executeAegisTool(
 
       case 'aegis_execute_transaction':
         // Use executeAgent for agent-signed transactions
-        return await aegisClient.executeAgent({
-          vault: args.vault,
-          destination: args.destination,
-          amount: BigInt(args.amount),
-          vaultNonce: BigInt(args.vaultNonce || 0),
-          purpose: args.purpose,
-        });
+        // If the transaction is blocked, the SDK will automatically notify Guardian
+        // and the error will contain the blinkUrl for the vault owner to approve
+        try {
+          return await aegisClient.executeAgent({
+            vault: args.vault,
+            destination: args.destination,
+            amount: BigInt(args.amount),
+            vaultNonce: BigInt(args.vaultNonce || 0),
+            purpose: args.purpose,
+          });
+        } catch (error: any) {
+          // Check if this is a blocked transaction with override requested
+          if (error.overrideRequested) {
+            return {
+              success: false,
+              blocked: true,
+              overrideRequested: true,
+              transactionId: error.transactionId,
+              blinkUrl: error.blinkUrl,
+              actionUrl: error.actionUrl,
+              reason: error.code || 'PolicyViolation',
+              message: `Transaction blocked: ${error.code || 'Policy violation'}. ` +
+                       `An override request has been sent to the vault owner. ` +
+                       `They can approve it using this Blink URL: ${error.blinkUrl}`,
+            };
+          }
+          throw error;
+        }
 
       case 'aegis_request_override':
         return await aegisClient.requestOverride({
