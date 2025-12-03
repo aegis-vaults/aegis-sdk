@@ -1,6 +1,6 @@
 {
   "name": "@aegis-vaults/sdk",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "TypeScript SDK for Aegis Protocol - On-chain operating system for AI finance on Solana",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -33,6 +33,7 @@
     "verify:setup": "tsx examples/verify-setup.ts",
     "example:quickstart": "tsx examples/quickstart.ts",
     "example:devnet": "tsx examples/devnet-test.ts",
+    "example:transfer": "tsx examples/transfer-example.ts",
     "type-check": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "prepublishOnly": "npm run build"
