@@ -219,12 +219,16 @@ export function createOpenAITools(_client: AegisClient): OpenAITool[] {
               type: 'string',
               description: 'Vault address (public key)',
             },
+            vaultNonce: {
+              type: 'number',
+              description: 'Vault nonce used for PDA derivation (from vault creation)',
+            },
             address: {
               type: 'string',
               description: 'Address to whitelist (public key)',
             },
           },
-          required: ['vault', 'address'],
+          required: ['vault', 'vaultNonce', 'address'],
         },
       },
     },
@@ -361,7 +365,7 @@ export async function executeAegisTool(
         return await aegisClient.getTransactionHistory(args);
 
       case 'aegis_add_to_whitelist':
-        return await aegisClient.addToWhitelist(args.vault, args.address);
+        return await aegisClient.addToWhitelist(args.vault, args.vaultNonce, args.address);
 
       case 'aegis_update_daily_limit':
         return await aegisClient.updatePolicy({

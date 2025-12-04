@@ -54,6 +54,12 @@ export interface GuardianVault {
   /** Guardian wallet address */
   guardian: string;
 
+  /** AI agent signer that can propose transactions */
+  agentSigner: string;
+
+  /** User ID (optional, links to User table) */
+  userId?: string;
+
   /** User-friendly vault name */
   name?: string;
 
@@ -67,6 +73,14 @@ export interface GuardianVault {
   /** Override configuration */
   overrideDelay: number;
   pendingOverride: boolean;
+
+  /** Vault tier and fees */
+  tier: 'PERSONAL' | 'TEAM' | 'ENTERPRISE';
+  feeBasisPoints: number;
+  paused: boolean;
+
+  /** Vault nonce for PDA derivation */
+  vaultNonce: string;
 
   /** Status */
   isActive: boolean;

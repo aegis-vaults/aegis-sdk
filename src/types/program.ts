@@ -78,6 +78,9 @@ export interface VaultConfig {
   /** Nonce for generating unique override PDAs */
   overrideNonce: BN;
 
+  /** Vault nonce (unique per user, allows multiple vaults) */
+  vaultNonce: BN;
+
   /** PDA bump seed for verification */
   bump: number;
 }

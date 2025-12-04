@@ -336,6 +336,7 @@ export class AegisClient {
         nameLen: accountInfo.nameLen,
         paused: accountInfo.paused,
         overrideNonce: accountInfo.overrideNonce as BN,
+        vaultNonce: accountInfo.vaultNonce as BN,
         bump: accountInfo.bump,
       };
     } catch (error) {
@@ -517,6 +518,7 @@ export class AegisClient {
    * Adds an address to the vault's whitelist
    *
    * @param vaultAddress - Vault address
+   * @param vaultNonce - Vault nonce used to derive the vault PDA
    * @param address - Address to whitelist
    * @returns Transaction signature
    * @throws MissingWalletError if no wallet is connected
@@ -526,11 +528,12 @@ export class AegisClient {
    * ```typescript
    * const signature = await client.addToWhitelist(
    *   'VaultPublicKey...',
+   *   12345, // vault nonce
    *   'DestinationPublicKey...'
    * );
    * ```
    */
-  public async addToWhitelist(vaultAddress: string, address: string): Promise<string> {
+  public async addToWhitelist(vaultAddress: string, vaultNonce: number | bigint, address: string): Promise<string> {
     if (!this.wallet) {
       throw new MissingWalletError('Wallet must be connected to modify whitelist');
     }
@@ -541,7 +544,7 @@ export class AegisClient {
       const authority = this.wallet.publicKey;
 
       const ix = await this.program.methods
-        .addToWhitelist(addressPubkey)
+        .addToWhitelist(new BN(vaultNonce.toString()), addressPubkey)
         .accounts({
           vault: vaultPubkey,
           authority: authority,
@@ -558,6 +561,7 @@ export class AegisClient {
    * Removes an address from the vault's whitelist
    *
    * @param vaultAddress - Vault address
+   * @param vaultNonce - Vault nonce used to derive the vault PDA
    * @param address - Address to remove
    * @returns Transaction signature
    * @throws MissingWalletError if no wallet is connected
@@ -567,11 +571,12 @@ export class AegisClient {
    * ```typescript
    * const signature = await client.removeFromWhitelist(
    *   'VaultPublicKey...',
+   *   12345, // vault nonce
    *   'DestinationPublicKey...'
    * );
    * ```
    */
-  public async removeFromWhitelist(vaultAddress: string, address: string): Promise<string> {
+  public async removeFromWhitelist(vaultAddress: string, vaultNonce: number | bigint, address: string): Promise<string> {
     if (!this.wallet) {
       throw new MissingWalletError('Wallet must be connected to modify whitelist');
     }
@@ -582,7 +587,7 @@ export class AegisClient {
       const authority = this.wallet.publicKey;
 
       const ix = await this.program.methods
-        .removeFromWhitelist(addressPubkey)
+        .removeFromWhitelist(new BN(vaultNonce.toString()), addressPubkey)
         .accounts({
           vault: vaultPubkey,
           authority: authority,
@@ -599,17 +604,18 @@ export class AegisClient {
    * Pauses a vault, blocking all transactions
    *
    * @param vaultAddress - Vault address
+   * @param vaultNonce - Vault nonce used to derive the vault PDA
    * @returns Transaction signature
    * @throws MissingWalletError if no wallet is connected
    * @throws NotImplementedError - This method is not yet implemented
    *
    * @example
    * ```typescript
-   * const signature = await client.pauseVault('VaultPublicKey...');
+   * const signature = await client.pauseVault('VaultPublicKey...', 12345);
    * console.log('Vault paused:', signature);
    * ```
    */
-  public async pauseVault(vaultAddress: string): Promise<string> {
+  public async pauseVault(vaultAddress: string, vaultNonce: number | bigint): Promise<string> {
     if (!this.wallet) {
       throw new MissingWalletError('Wallet must be connected to pause vault');
     }
@@ -619,7 +625,7 @@ export class AegisClient {
       const authority = this.wallet.publicKey;
 
       const ix = await this.program.methods
-        .pauseVault()
+        .pauseVault(new BN(vaultNonce.toString()))
         .accounts({
           vault: vaultPubkey,
           authority: authority,
@@ -636,17 +642,18 @@ export class AegisClient {
    * Resumes a paused vault
    *
    * @param vaultAddress - Vault address
+   * @param vaultNonce - Vault nonce used to derive the vault PDA
    * @returns Transaction signature
    * @throws MissingWalletError if no wallet is connected
    * @throws NotImplementedError - This method is not yet implemented
    *
    * @example
    * ```typescript
-   * const signature = await client.resumeVault('VaultPublicKey...');
+   * const signature = await client.resumeVault('VaultPublicKey...', 12345);
    * console.log('Vault resumed:', signature);
    * ```
    */
-  public async resumeVault(vaultAddress: string): Promise<string> {
+  public async resumeVault(vaultAddress: string, vaultNonce: number | bigint): Promise<string> {
     if (!this.wallet) {
       throw new MissingWalletError('Wallet must be connected to resume vault');
     }
@@ -656,7 +663,7 @@ export class AegisClient {
       const authority = this.wallet.publicKey;
 
       const ix = await this.program.methods
-        .resumeVault()
+        .resumeVault(new BN(vaultNonce.toString()))
         .accounts({
           vault: vaultPubkey,
           authority: authority,
@@ -666,6 +673,56 @@ export class AegisClient {
       return await this.sendTransaction([ix]);
     } catch (error) {
       throw this.handleError(error, `Failed to resume vault ${vaultAddress}`);
+    }
+  }
+
+  /**
+   * Updates the AI agent signer key
+   *
+   * Allows vault authority to rotate the agent's signing key for security purposes.
+   * This is useful when you need to change which AI agent can execute transactions.
+   *
+   * @param vaultAddress - Vault address
+   * @param vaultNonce - Vault nonce used to derive the vault PDA
+   * @param newAgentSigner - New public key for the AI agent
+   * @returns Transaction signature
+   * @throws MissingWalletError if no wallet is connected
+   *
+   * @example
+   * ```typescript
+   * const signature = await client.updateAgentSigner(
+   *   'VaultPublicKey...',
+   *   12345,
+   *   'NewAgentPublicKey...'
+   * );
+   * console.log('Agent signer updated:', signature);
+   * ```
+   */
+  public async updateAgentSigner(
+    vaultAddress: string,
+    vaultNonce: number | bigint,
+    newAgentSigner: string
+  ): Promise<string> {
+    if (!this.wallet) {
+      throw new MissingWalletError('Wallet must be connected to update agent signer');
+    }
+
+    try {
+      const vaultPubkey = new PublicKey(vaultAddress);
+      const newAgentSignerPubkey = new PublicKey(newAgentSigner);
+      const authority = this.wallet.publicKey;
+
+      const ix = await this.program.methods
+        .updateAgentSigner(new BN(vaultNonce.toString()), newAgentSignerPubkey)
+        .accounts({
+          vault: vaultPubkey,
+          authority: authority,
+        })
+        .instruction();
+
+      return await this.sendTransaction([ix]);
+    } catch (error) {
+      throw this.handleError(error, `Failed to update agent signer for vault ${vaultAddress}`);
     }
   }
 
@@ -978,18 +1035,19 @@ export class AegisClient {
    * Approves a pending override request
    *
    * @param vaultAddress - Vault address
-   * @param nonce - Override nonce
+   * @param vaultNonce - Vault nonce used to derive the vault PDA
+   * @param overrideNonce - Override nonce
    * @returns Transaction signature
    * @throws MissingWalletError if no wallet is connected
    * @throws NotImplementedError - This method is not yet implemented
    *
    * @example
    * ```typescript
-   * const signature = await client.approveOverride('VaultPublicKey...', '1');
+   * const signature = await client.approveOverride('VaultPublicKey...', 12345, '1');
    * console.log('Override approved:', signature);
    * ```
    */
-  public async approveOverride(vaultAddress: string, nonce: string): Promise<string> {
+  public async approveOverride(vaultAddress: string, vaultNonce: number | bigint, overrideNonce: string): Promise<string> {
     if (!this.wallet) {
       throw new MissingWalletError('Wallet must be connected to approve override');
     }
@@ -997,14 +1055,14 @@ export class AegisClient {
     try {
       const vaultPubkey = new PublicKey(vaultAddress);
       const authority = this.wallet.publicKey;
-      const nonceBN = new BN(nonce);
+      const nonceBN = new BN(overrideNonce);
 
       // Derive pending override PDA
       const [pendingOverridePda] = deriveOverridePda(vaultPubkey, nonceBN, this.programId);
 
       // Build approve_override instruction
       const ix = await this.program.methods
-        .approveOverride()
+        .approveOverride(new BN(vaultNonce.toString()))
         .accounts({
           vault: vaultPubkey,
           authority: authority,
@@ -1014,7 +1072,7 @@ export class AegisClient {
 
       return await this.sendTransaction([ix]);
     } catch (error) {
-      throw this.handleError(error, `Failed to approve override ${nonce}`);
+      throw this.handleError(error, `Failed to approve override ${overrideNonce}`);
     }
   }
 

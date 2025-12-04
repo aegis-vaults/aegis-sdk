@@ -180,10 +180,10 @@ Only whitelisted addresses can receive funds:
 
 ```typescript
 // Add address to whitelist
-await client.addToWhitelist(vaultAddress, recipientAddress);
+await client.addToWhitelist(vaultAddress, vaultNonce, recipientAddress);
 
 // Remove from whitelist
-await client.removeFromWhitelist(vaultAddress, oldAddress);
+await client.removeFromWhitelist(vaultAddress, vaultNonce, oldAddress);
 
 // View current whitelist
 const vault = await client.getVault(vaultAddress);
@@ -203,10 +203,13 @@ await client.updatePolicy({
 
 ```typescript
 // Pause vault (blocks ALL transactions)
-await client.pauseVault(vaultAddress);
+await client.pauseVault(vaultAddress, vaultNonce);
 
 // Resume vault
-await client.resumeVault(vaultAddress);
+await client.resumeVault(vaultAddress, vaultNonce);
+
+// Rotate agent signer key (security)
+await client.updateAgentSigner(vaultAddress, vaultNonce, newAgentPublicKey);
 ```
 
 ### Checking Vault Status
@@ -488,10 +491,11 @@ const client = new AegisClient({
 | Method | Description | Signer |
 |--------|-------------|--------|
 | `updatePolicy(options)` | Update daily limit | Owner |
-| `addToWhitelist(vault, address)` | Add to whitelist | Owner |
-| `removeFromWhitelist(vault, address)` | Remove from whitelist | Owner |
-| `pauseVault(address)` | Pause all transactions | Owner |
-| `resumeVault(address)` | Resume transactions | Owner |
+| `addToWhitelist(vault, nonce, address)` | Add to whitelist | Owner |
+| `removeFromWhitelist(vault, nonce, address)` | Remove from whitelist | Owner |
+| `pauseVault(vault, nonce)` | Pause all transactions | Owner |
+| `resumeVault(vault, nonce)` | Resume transactions | Owner |
+| `updateAgentSigner(vault, nonce, newSigner)` | Rotate agent key | Owner |
 
 #### Transaction Execution
 
@@ -500,8 +504,8 @@ const client = new AegisClient({
 | `executeGuarded(options)` | Execute owner-signed tx | Owner |
 | `executeAgent(options)` | Execute agent-signed tx | Agent |
 | `requestOverride(options)` | Request manual approval | Owner |
-| `approveOverride(vault, nonce)` | Approve override | Owner |
-| `executeOverride(vault, nonce)` | Execute approved override | Owner |
+| `approveOverride(vault, vaultNonce, overrideNonce)` | Approve override | Owner |
+| `executeOverride(vault, vaultNonce)` | Execute approved override | Owner |
 
 #### Guardian API
 
@@ -649,6 +653,19 @@ npm test
 
 5. **Devnet vs Mainnet**: Override Blinks may show "timeout" on devnet due to slow confirmation. The transaction usually succeeds - check your vault balance.
 
+## Documentation
+
+For comprehensive guides, tutorials, and API documentation, visit:
+
+- **Documentation Site**: https://docs.aegis-vaults.xyz
+- **GitHub Docs**: https://github.com/aegis-vaults/aegis-docs
+
+## Support & Community
+
+- **Issues**: https://github.com/aegis-vaults/aegis-sdk/issues
+- **Discord**: [Join our community](https://discord.gg/aegis-vaults)
+- **Twitter**: [@aegis_vaults](https://twitter.com/aegis_vaults)
+
 ## License
 
 MIT License
@@ -657,5 +674,5 @@ MIT License
 
 Made with ❤️ by the Aegis team
 
-**Guardian API**: https://aegis-guardian-production.up.railway.app  
+**Guardian API**: https://aegis-guardian-production.up.railway.app
 **Program ID (Devnet)**: `ET9WDoFE2bf4bSmciLL7q7sKdeSYeNkWbNMHbAMBu2ZJ`
