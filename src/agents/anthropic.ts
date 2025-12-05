@@ -35,7 +35,7 @@ export interface AnthropicTool {
  * const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
  *
  * const message = await anthropic.messages.create({
- *   model: 'claude-3-5-sonnet-20241022',
+ *   model: 'claude-3-5-sonnet-20251022',
  *   max_tokens: 1024,
  *   tools,
  *   messages: [{ role: 'user', content: 'Send 0.1 SOL to Alice' }],
@@ -308,7 +308,7 @@ export async function executeAegisAnthropicTool(
  * });
  *
  * const message = await anthropic.messages.create({
- *   model: 'claude-3-5-sonnet-20241022',
+ *   model: 'claude-3-5-sonnet-20251022',
  *   system: systemPrompt,
  *   messages: [...]
  * });
