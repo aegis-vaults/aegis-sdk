@@ -84,7 +84,7 @@ export class AegisClient {
   private readonly connection: Connection;
 
   /** Aegis Protocol program instance */
-  private readonly program: any;
+  private program: any;
 
   /** Program ID */
   private readonly programId: PublicKey;
@@ -194,21 +194,24 @@ export class AegisClient {
    *
    * @example
    * ```typescript
+   * import { Wallet } from '@coral-xyz/anchor';
    * import { Keypair } from '@solana/web3.js';
    *
-   * const wallet = Keypair.generate();
+   * const keypair = Keypair.generate();
+   * const wallet = new Wallet(keypair);
    * client.setWallet(wallet);
    * ```
    */
   public setWallet(wallet: Wallet): void {
     this.wallet = wallet;
 
-    // Update provider with new wallet
+    // Recreate provider with new wallet
     const provider = new AnchorProvider(this.connection, wallet, {
       commitment: this.commitment,
     });
 
-    (this.program as any).provider = provider;
+    // Recreate Program instance with new provider (provider is read-only in Anchor)
+    this.program = new Program(idl as any, provider) as any;
   }
 
   /**

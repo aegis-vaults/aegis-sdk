@@ -91,9 +91,12 @@ const client = new AegisClient({
   guardianApiUrl: 'https://aegis-guardian-production.up.railway.app',
 });
 
-// Connect your wallet (browser wallet or keypair)
+// Connect your wallet (must wrap Keypair in Wallet from Anchor)
+import { Wallet } from '@coral-xyz/anchor';
+
 const ownerKeypair = Keypair.fromSecretKey(/* your secret key */);
-client.setWallet(ownerKeypair);
+const wallet = new Wallet(ownerKeypair);
+client.setWallet(wallet);
 
 // Create vault
 const result = await client.createVault({
@@ -133,10 +136,13 @@ const client = new AegisClient({
 });
 
 // Load your AI agent's keypair (keep this secure!)
+import { Wallet } from '@coral-xyz/anchor';
+
 const agentKeypair = Keypair.fromSecretKey(
   Uint8Array.from(JSON.parse(process.env.AGENT_SECRET_KEY!))
 );
-client.setWallet(agentKeypair);
+const wallet = new Wallet(agentKeypair);
+client.setWallet(wallet);
 
 // Execute transaction (auto-notifies Guardian if blocked)
 try {
@@ -245,10 +251,13 @@ const client = new AegisClient({
 });
 
 // Load agent keypair from environment
+import { Wallet } from '@coral-xyz/anchor';
+
 const agentKeypair = Keypair.fromSecretKey(
   Uint8Array.from(JSON.parse(process.env.AGENT_SECRET_KEY!))
 );
-client.setWallet(agentKeypair);
+const wallet = new Wallet(agentKeypair);
+client.setWallet(wallet);
 ```
 
 ### Executing Transactions
